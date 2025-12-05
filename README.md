@@ -72,6 +72,103 @@ The `setup` function accepts a table with the following keys:
 
 For a complete list of available settings (validation, formatting, etc.), please refer to the [hledger-lsp Server Documentation](https://github.com/ptimoney/hledger-lsp/tree/main/server#user-configuration).
 
+### Default Settings Reference
+
+Here's a complete configuration showing all available settings with their defaults. Copy and modify as needed:
+
+```lua
+{
+  "ptimoney/hledger-nvim",
+  ft = { "hledger", "journal" },
+  dependencies = { "neovim/nvim-lspconfig" },
+  opts = {
+    lsp_opts = {
+      settings = {
+        hledgerLanguageServer = {
+          -- Validation settings (most default to true, except undeclaredPayees)
+          validation = {
+            balance = true,
+            missingAmounts = true,
+            undeclaredAccounts = true,
+            undeclaredPayees = false,  -- Note: defaults to false
+            undeclaredCommodities = true,
+            undeclaredTags = true,
+            dateOrdering = true,
+            balanceAssertions = true,
+            emptyTransactions = true,
+            invalidDates = true,
+            futureDates = true,
+            emptyDescriptions = true,
+            includeFiles = true,
+            circularIncludes = true,
+            markAllUndeclaredInstances = true,  -- Note: defaults to true
+          },
+          
+          -- Severity levels for undeclared items
+          severity = {
+            undeclaredAccounts = "warning",    -- "error" | "warning" | "information" | "hint"
+            undeclaredPayees = "warning",
+            undeclaredCommodities = "warning",
+            undeclaredTags = "information",
+          },
+          
+          -- Include directive behavior
+          include = {
+            followIncludes = true,
+            maxDepth = 10,
+          },
+          
+          -- Workspace settings
+          workspace = {
+            enabled = true,
+            eagerParsing = true,
+            autoDetectRoot = true,
+          },
+          
+          -- Completion filtering (only show declared items)
+          completion = {
+            onlyDeclaredAccounts = true,
+            onlyDeclaredPayees = true,
+            onlyDeclaredCommodities = true,
+            onlyDeclaredTags = true,
+          },
+          
+          -- Formatting options
+          formatting = {
+            indentation = 4,
+            maxAccountWidth = 42,
+            maxCommodityWidth = 4,
+            maxAmountWidth = 12,
+            minSpacing = 2,
+            decimalAlignColumn = 52,
+            assertionDecimalAlignColumn = 70,
+          },
+          
+          -- Inlay hints (all default to false)
+          inlayHints = {
+            showInferredAmounts = false,
+            showRunningBalances = false,
+            showCostConversions = false,
+          },
+          
+          -- Code lens (default to false)
+          codeLens = {
+            showTransactionCounts = false,
+          },
+          
+          -- General settings
+          maxNumberOfProblems = 1000,
+          hledgerPath = "hledger",  -- Path to hledger executable
+        },
+      },
+    },
+  },
+  config = function(_, opts)
+    require("hledger").setup(opts)
+  end,
+}
+```
+
 ## Commands
 
 - `:HledgerGraph`: Opens a floating window showing the workspace graph.
