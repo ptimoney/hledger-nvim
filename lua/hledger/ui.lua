@@ -339,6 +339,15 @@ function M.show_workspace_graph()
         local search = (prompt_lines[1] or ""):gsub("^Filter: ", "")
 
         update_display(search)
+        
+        -- Restore cursor to the folded node's new display line
+        for new_display_line, orig_idx in pairs(display_line_to_original) do
+          if orig_idx == original_idx then
+            vim.api.nvim_win_set_cursor(win, {new_display_line, 0})
+            break
+          end
+        end
+        
         update_preview()
       end
     end, opts)
