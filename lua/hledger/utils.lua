@@ -23,8 +23,12 @@ function M.get_depth(display)
   local spaces = display:match("^( *)")
   depth = depth + math.floor(#spaces / 4)
   
-  -- Count box drawing characters
-  depth = depth + select(2, display:gsub("[│├└]", ""))
+  -- Count tree structure box-drawing characters
+  -- These are multi-byte UTF-8 characters, so we can't use simple gsub
+  -- Count occurrences of each tree character
+  for _ in display:gmatch("├") do depth = depth + 1 end
+  for _ in display:gmatch("└") do depth = depth + 1 end
+  for _ in display:gmatch("│") do depth = depth + 1 end
   
   return depth
 end
