@@ -10,13 +10,15 @@ A Neovim plugin for hledger, providing LSP integration and a workspace graph vis
 
 ## Prerequisites
 
-You must have the `hledger-lsp` language server installed. You can install it globally via npm:
+You must have the `hledger-lsp` language server installed. You can install it
+globally via npm:
 
 ```bash
 npm install -g hledger-lsp
 ```
 
-Ensure `hledger-lsp` is in your PATH. You can verify this by running `hledger-lsp --version`.
+Ensure `hledger-lsp` is in your PATH. You can verify this by running
+`hledger-lsp --version`.
 
 ## Installation
 
@@ -39,8 +41,10 @@ Ensure `hledger-lsp` is in your PATH. You can verify this by running `hledger-ls
 
 The `setup` function accepts a table with the following keys:
 
-- `cmd`: (table) The command to start the LSP server. Defaults to `{ "hledger-lsp", "--stdio" }`.
-- `lsp_opts`: (table) Options passed to `lspconfig.hledger_lsp.setup()`. Use this to set `on_attach`, `capabilities`, and `settings`.
+- `cmd`: (table) The command to start the LSP server. Defaults to
+`{ "hledger-lsp", "--stdio" }`.
+- `lsp_opts`: (table) Options passed to `lspconfig.hledger_lsp.setup()`. Use
+this to set `on_attach`, `capabilities`, and `settings`.
 
 ### Example Configuration
 
@@ -54,7 +58,6 @@ The `setup` function accepts a table with the following keys:
       settings = {
         hledgerLanguageServer = {
           inlayHints = {
-            showInferredAmounts = true,
             showRunningBalances = true,
           },
           validation = {
@@ -70,11 +73,13 @@ The `setup` function accepts a table with the following keys:
 }
 ```
 
-For a complete list of available settings (validation, formatting, etc.), please refer to the [hledger-lsp Server Documentation](https://github.com/ptimoney/hledger-lsp/tree/main/server#user-configuration).
+For a complete list of available settings (validation, formatting, etc.), please
+refer to the [hledger-lsp Server Documentation](https://github.com/ptimoney/hledger-lsp/tree/main/server#user-configuration).
 
 ### Default Settings Reference
 
-Here's a complete configuration showing all available settings with their defaults. Copy and modify as needed:
+Here's a complete configuration showing all available settings with their
+defaults. Copy and modify as needed:
 
 ```lua
 {
@@ -85,14 +90,13 @@ Here's a complete configuration showing all available settings with their defaul
     lsp_opts = {
       settings = {
         hledgerLanguageServer = {
-          -- Validation settings (most default to true, except undeclaredPayees)
           validation = {
             balance = true,
             missingAmounts = true,
             undeclaredAccounts = true,
-            undeclaredPayees = false,  -- Note: defaults to false
+            undeclaredPayees = false,
             undeclaredCommodities = true,
-            undeclaredTags = true,
+            undeclaredTags = false,
             dateOrdering = true,
             balanceAssertions = true,
             emptyTransactions = true,
@@ -101,12 +105,13 @@ Here's a complete configuration showing all available settings with their defaul
             emptyDescriptions = true,
             includeFiles = true,
             circularIncludes = true,
-            markAllUndeclaredInstances = true,  -- Note: defaults to true
+            markAllUndeclaredInstances = true, 
           },
           
-          -- Severity levels for undeclared items
+          -- Severity levels for undeclared items 
+          --   "error" | "warning" | "information" | "hint" 
           severity = {
-            undeclaredAccounts = "warning",    -- "error" | "warning" | "information" | "hint"
+            undeclaredAccounts = "warning", 
             undeclaredPayees = "warning",
             undeclaredCommodities = "warning",
             undeclaredTags = "information",
@@ -142,13 +147,15 @@ Here's a complete configuration showing all available settings with their defaul
             minSpacing = 2,
             decimalAlignColumn = 52,
             assertionDecimalAlignColumn = 70,
+            signPosition="after-symbol",
           },
           
-          -- Inlay hints (all default to false)
+          -- Inlay hints (show Running Balances is turned off by default as 
+          --              otherwise it can be very busy)
           inlayHints = {
-            showInferredAmounts = false,
+            showInferredAmounts = true,
             showRunningBalances = false,
-            showCostConversions = false,
+            showCostConversions = true,
           },
           
           -- Code lens (default to false)
