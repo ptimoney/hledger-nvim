@@ -64,16 +64,10 @@ function M.setup(opts)
     end
   end)
 
-  -- Force refresh inlay hints when entering buffer
-  vim.api.nvim_create_autocmd("BufEnter", {
-    pattern = { "*.journal", "*.hledger" },
-    callback = function(args)
-      if vim.lsp.inlay_hint and vim.lsp.inlay_hint.is_enabled({ bufnr = args.buf }) then
-        vim.lsp.inlay_hint.enable(false, { bufnr = args.buf })
-        vim.lsp.inlay_hint.enable(true, { bufnr = args.buf })
-      end
-    end,
-  })
+  -- Note: Inlay hint refresh is now handled by the language server
+  -- The server sends workspace/inlayHint/refresh notifications when documents change,
+  -- which Neovim's LSP client automatically responds to.
+  -- No BufEnter workaround needed.
 end
 
 return M
