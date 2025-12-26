@@ -103,9 +103,10 @@ defaults. Copy and modify as needed:
             invalidDates = true,
             futureDates = true,
             emptyDescriptions = true,
+            formatMismatch = true,
             includeFiles = true,
             circularIncludes = true,
-            markAllUndeclaredInstances = true, 
+            markAllUndeclaredInstances = true,
           },
           
           -- Severity levels for undeclared items 
@@ -141,13 +142,14 @@ defaults. Copy and modify as needed:
           -- Formatting options
           formatting = {
             indentation = 4,
-            maxAccountWidth = 42,
             maxCommodityWidth = 4,
-            maxAmountWidth = 12,
+            maxAmountIntegerWidth = 12,
+            maxAmountDecimalWidth = 3,
             minSpacing = 2,
             decimalAlignColumn = 52,
             assertionDecimalAlignColumn = 70,
-            signPosition="after-symbol",
+            signPosition = "after-symbol",
+            showPositivesSign = false,
           },
           
           -- Inlay hints (show Running Balances is turned off by default as 
