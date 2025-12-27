@@ -45,6 +45,8 @@ The `setup` function accepts a table with the following keys:
 `{ "hledger-lsp", "--stdio" }`.
 - `lsp_opts`: (table) Options passed to `lspconfig.hledger_lsp.setup()`. Use
 this to set `on_attach`, `capabilities`, and `settings`.
+- `keymap`: (string|false) Keybinding for `:HledgerGraph`. Defaults to
+`"<leader>hg"`. Set to `false` to disable the default keybinding.
 
 ### Example Configuration
 
@@ -54,6 +56,10 @@ this to set `on_attach`, `capabilities`, and `settings`.
   ft = { "hledger", "journal" },
   dependencies = { "neovim/nvim-lspconfig" },
   opts = {
+    -- Keymap for :HledgerGraph (default: "<leader>hg")
+    -- Set to false to disable, or customize to your preference
+    keymap = "<leader>hg",  -- or false to disable, or "<C-g>" etc.
+
     lsp_opts = {
       settings = {
         hledgerLanguageServer = {
@@ -87,6 +93,10 @@ defaults. Copy and modify as needed:
   ft = { "hledger", "journal" },
   dependencies = { "neovim/nvim-lspconfig" },
   opts = {
+    -- Keymap configuration
+    keymap = "<leader>hg",  -- Default: opens workspace graph with <leader>hg
+                            -- Set to false to disable default keybinding
+
     lsp_opts = {
       settings = {
         hledgerLanguageServer = {
@@ -178,13 +188,23 @@ defaults. Copy and modify as needed:
 }
 ```
 
-## Commands
+## Commands and Keybindings
+
+### Commands
 
 - `:HledgerGraph`: Opens a floating window showing the workspace graph.
-  - `Enter`: Open selected file
-  - `/`: Filter files
-  - `za`: Toggle fold
-  - `q` / `Esc`: Close window
+
+### Default Keybindings
+
+- `<leader>hg`: Opens the workspace graph (can be customized or disabled via
+  `keymap` option in setup)
+
+### Workspace Graph Window Keybindings
+
+- `Enter`: Open selected file
+- `/`: Filter files
+- `za`: Toggle fold
+- `q` / `Esc`: Close window
 
 ## Requirements
 
