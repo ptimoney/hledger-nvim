@@ -80,7 +80,7 @@ this to set `on_attach`, `capabilities`, and `settings`.
 ```
 
 For a complete list of available settings (validation, formatting, etc.), please
-refer to the [hledger-lsp Server Documentation](https://github.com/ptimoney/hledger-lsp/tree/main/server#user-configuration).
+refer to the [hledger-lsp Server Documentation](https://github.com/ptimoney/hledger-lsp/tree/main#configuration).
 
 ### Default Settings Reference
 
