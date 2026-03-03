@@ -1,0 +1,7 @@
+return {
+  default = {
+    lua = "test/nvim-shim",
+    ROOT = { "test/" },
+    pattern = "_spec",
+  },
+}

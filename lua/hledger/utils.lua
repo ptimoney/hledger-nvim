@@ -11,7 +11,7 @@ M.FOLD_INDICATOR_WIDTH = 4
 -- Helper: Set multiple window options at once
 function M.set_win_options(win, options)
   for key, value in pairs(options) do
-    vim.api.nvim_win_set_option(win, key, value)
+    vim.api.nvim_set_option_value(key, value, { win = win })
   end
 end
 

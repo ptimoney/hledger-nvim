@@ -1,5 +1,6 @@
 local M = {}
 local utils = require("hledger.utils")
+local graph = require("hledger.graph")
 
 function M.show_workspace_graph()
   local params = {
@@ -18,24 +19,11 @@ function M.show_workspace_graph()
     end
 
     -- Filter out cycle entries (entries without paths)
-    local entries = {}
-    for _, entry in ipairs(result) do
-      if entry.path and entry.path ~= "" then
-        table.insert(entries, entry)
-      end
-    end
+    local entries, lines, original_line_to_path = graph.filter_entries(result)
 
     if #entries == 0 then
       vim.notify("No files found in workspace graph", vim.log.levels.WARN)
       return
-    end
-
-    -- Build display lines and path mapping
-    local lines = {}
-    local original_line_to_path = {}
-    for i, entry in ipairs(entries) do
-      table.insert(lines, entry.display)
-      original_line_to_path[i] = entry.path
     end
 
     -- Calculate window dimensions
@@ -49,10 +37,10 @@ function M.show_workspace_graph()
 
     -- Create main buffer (file list)
     local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf, "filetype", "hledger-workspace")
-    vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
+    vim.api.nvim_set_option_value("filetype", "hledger-workspace", { buf = buf })
+    vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 
     -- Create main window
     local win = vim.api.nvim_open_win(buf, true, {
@@ -75,8 +63,8 @@ function M.show_workspace_graph()
     
     -- Create preview buffer and window
     local preview_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(preview_buf, "buftype", "nofile")
-    vim.api.nvim_buf_set_option(preview_buf, "bufhidden", "wipe")
+    vim.api.nvim_set_option_value("buftype", "nofile", { buf = preview_buf })
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = preview_buf })
     
     local preview_win = vim.api.nvim_open_win(preview_buf, false, {
       relative = "editor",
@@ -98,8 +86,8 @@ function M.show_workspace_graph()
 
     -- Create prompt buffer and window
     local prompt_buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_option(prompt_buf, "buftype", "prompt")
-    vim.api.nvim_buf_set_option(prompt_buf, "bufhidden", "wipe")
+    vim.api.nvim_set_option_value("buftype", "prompt", { buf = prompt_buf })
+    vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = prompt_buf })
     vim.fn.prompt_setprompt(prompt_buf, "Filter: ")
 
     local prompt_win = vim.api.nvim_open_win(prompt_buf, false, {
@@ -125,7 +113,7 @@ function M.show_workspace_graph()
       local line = vim.api.nvim_win_get_cursor(win)[1]
       local path = line_to_path[line]
       
-      vim.api.nvim_buf_set_option(preview_buf, "modifiable", true)
+      vim.api.nvim_set_option_value("modifiable", true, { buf = preview_buf })
       
       if path then
         local stat = vim.loop.fs_stat(path)
@@ -144,7 +132,7 @@ function M.show_workspace_graph()
             
             local ft = utils.detect_filetype(path)
             if ft then
-              vim.api.nvim_buf_set_option(preview_buf, "filetype", ft)
+              vim.api.nvim_set_option_value("filetype", ft, { buf = preview_buf })
             end
           else
             vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, { "Error reading file" })
@@ -158,7 +146,7 @@ function M.show_workspace_graph()
         vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, { "" })
       end
       
-      vim.api.nvim_buf_set_option(preview_buf, "modifiable", false)
+      vim.api.nvim_set_option_value("modifiable", false, { buf = preview_buf })
     end
     
     -- Update preview on cursor move
@@ -172,30 +160,12 @@ function M.show_workspace_graph()
     update_preview()
     
     -- Pre-calculate depths and parent map (expensive, do once)
-    local depths = {}
-    for i, line in ipairs(lines) do
-      depths[i] = utils.get_depth(line)
-    end
-
-    local parent_map = {}
-    for i = 2, #lines do
-      local my_depth = depths[i]
-      for j = i - 1, 1, -1 do
-        if depths[j] == my_depth - 1 then
-          parent_map[i] = j
-          break
-        end
-      end
-    end
+    local depths = graph.build_depths(lines)
+    local parent_map = graph.build_parent_map(depths)
 
     -- Track folded nodes and display mapping
     local folded = {}
     local display_line_to_original = {}
-
-    -- Check if a node has children
-    local function has_children(line_idx)
-      return line_idx < #lines and depths[line_idx + 1] > depths[line_idx]
-    end
 
     -- Namespace for highlighting
     local ns_id = vim.api.nvim_create_namespace("hledger_filter")
@@ -203,71 +173,16 @@ function M.show_workspace_graph()
     -- Update display based on search filter and fold state
     local function update_display(search)
       vim.api.nvim_buf_clear_namespace(buf, ns_id, 0, -1)
-      display_line_to_original = {}
-      
-      local matches = {}
-      local include = {}
 
-      if search == "" then
-        -- Include all lines when no filter
-        for i = 1, #lines do
-          include[i] = true
-        end
-      else
-        -- Find matching lines
-        for i, line in ipairs(lines) do
-          local is_match, positions = utils.fuzzy_match(line, search)
-          if is_match then
-            matches[i] = positions
-          end
-        end
+      local filtered, filtered_mapping, d2o, matches =
+        graph.compute_display(lines, depths, parent_map, folded, search, original_line_to_path)
 
-        -- Include all ancestor nodes of matches
-        for match_idx in pairs(matches) do
-          include[match_idx] = true
-          local current = match_idx
-          while parent_map[current] do
-            current = parent_map[current]
-            include[current] = true
-          end
-        end
-      end
-
-      -- Filter out descendants of folded nodes
-      for i = 1, #lines do
-        if include[i] then
-          local current = i
-          while parent_map[current] do
-            current = parent_map[current]
-            if folded[current] then
-              include[i] = false
-              break
-            end
-          end
-        end
-      end
-
-      -- Build display list with fold indicators
-      local filtered = {}
-      local filtered_mapping = {}
-      for i, line in ipairs(lines) do
-        if include[i] then
-          local display_line
-          if has_children(i) then
-            display_line = (folded[i] and "▶ " or "▼ ") .. line
-          else
-            display_line = "  " .. line
-          end
-          table.insert(filtered, display_line)
-          filtered_mapping[#filtered] = original_line_to_path[i]
-          display_line_to_original[#filtered] = i
-        end
-      end
+      display_line_to_original = d2o
 
       -- Update buffer
-      vim.api.nvim_buf_set_option(buf, "modifiable", true)
+      vim.api.nvim_set_option_value("modifiable", true, { buf = buf })
       vim.api.nvim_buf_set_lines(buf, 0, -1, false, filtered)
-      vim.api.nvim_buf_set_option(buf, "modifiable", false)
+      vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
 
       -- Highlight matched characters and grey out non-matches
       if search ~= "" then
@@ -276,13 +191,11 @@ function M.show_workspace_graph()
           if original_index then
             local match_positions = matches[original_index]
             if type(match_positions) == "table" and #match_positions > 0 then
-              -- Highlight matched characters (offset by fold indicator width)
               for _, pos in ipairs(match_positions) do
-                vim.api.nvim_buf_add_highlight(buf, ns_id, "IncSearch", display_line - 1, 
+                vim.api.nvim_buf_add_highlight(buf, ns_id, "IncSearch", display_line - 1,
                   pos + utils.FOLD_INDICATOR_WIDTH, pos + utils.FOLD_INDICATOR_WIDTH + 1)
               end
             elseif not matches[original_index] then
-              -- Grey out non-matching parent nodes
               vim.api.nvim_buf_add_highlight(buf, ns_id, "Comment", display_line - 1, 0, -1)
             end
           end
@@ -331,7 +244,7 @@ function M.show_workspace_graph()
       local display_line = vim.api.nvim_win_get_cursor(win)[1]
       local original_idx = display_line_to_original[display_line]
 
-      if original_idx and has_children(original_idx) then
+      if original_idx and graph.has_children(original_idx, depths) then
         folded[original_idx] = not folded[original_idx]
 
         -- Get current search from prompt

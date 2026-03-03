@@ -1,0 +1,8 @@
+#!/bin/sh
+# Shim that runs a Lua script inside headless Neovim so vim.* APIs are available.
+# Used as the --lua flag for busted.
+# Add lua/ to the package path so require("hledger.*") works.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
+export LUA_PATH="${PLUGIN_ROOT}/lua/?.lua;${PLUGIN_ROOT}/lua/?/init.lua;${LUA_PATH:-;}"
+exec nvim --headless --clean -u NONE -l "$@"
