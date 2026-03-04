@@ -1,24 +1,32 @@
 # hledger-nvim
 
-A Neovim plugin for hledger, providing LSP integration and a workspace graph visualization.
+[hledger](https://hledger.org/) plain text accounting support for Neovim &mdash; powered by the [hledger language server](https://github.com/ptimoney/hledger-lsp).
+
+Automatic LSP setup, workspace graph visualization, and full IDE features including completion, validation, formatting, navigation, and inlay hints.
+
+Also available for [VS Code](https://marketplace.visualstudio.com/items?itemName=patrickt.hledger-lsp-vscode).
 
 ## Features
 
-- **LSP Integration**: Automatically sets up `hledger-lsp` with `nvim-lspconfig`.
-- **Workspace Graph**: Visualize your journal file dependencies with `:HledgerGraph`.
-- **Inlay Hints**: Support for inferred amounts, running balances, and cost conversions.
+All features are provided by the [hledger-lsp](https://github.com/ptimoney/hledger-lsp) language server. This plugin handles setup and provides Neovim-specific UI:
+
+- **LSP Integration** &mdash; automatic `hledger-lsp` configuration via `nvim-lspconfig`
+- **Completion** &mdash; accounts, payees, commodities, tags, and context-aware suggestions
+- **Validation** &mdash; 15+ configurable rules (balance, undeclared items, date ordering, etc.)
+- **Formatting** &mdash; decimal-point alignment, commodity formatting, configurable indentation
+- **Navigation** &mdash; go to definition, find references, document/workspace symbols
+- **Inlay Hints** &mdash; inferred amounts, running balances, and cost conversions
+- **Workspace Graph** &mdash; `:HledgerGraph` floating window with fuzzy filtering and file preview
 
 ## Prerequisites
 
-You must have the `hledger-lsp` language server installed. You can install it
-globally via npm:
+Install the [hledger-lsp](https://github.com/ptimoney/hledger-lsp) language server:
 
 ```bash
 npm install -g hledger-lsp
 ```
 
-Ensure `hledger-lsp` is in your PATH. You can verify this by running
-`hledger-lsp --version`.
+Verify it is in your PATH: `hledger-lsp --version`
 
 ## Installation
 
@@ -79,13 +87,12 @@ this to set `on_attach`, `capabilities`, and `settings`.
 }
 ```
 
-For a complete list of available settings (validation, formatting, etc.), please
-refer to the [hledger-lsp Server Documentation](https://github.com/ptimoney/hledger-lsp/tree/main#configuration).
+For a complete list of available settings (validation, formatting, completion, etc.), see the [language server configuration guide](https://github.com/ptimoney/hledger-lsp#configuration).
 
 ### Default Settings Reference
 
-Here's a complete configuration showing all available settings with their
-defaults. Copy and modify as needed:
+<details>
+<summary>Full configuration with all defaults (click to expand)</summary>
 
 ```lua
 {
@@ -118,29 +125,29 @@ defaults. Copy and modify as needed:
             circularIncludes = true,
             markAllUndeclaredInstances = true,
           },
-          
-          -- Severity levels for undeclared items 
-          --   "error" | "warning" | "information" | "hint" 
+
+          -- Severity levels for undeclared items
+          --   "error" | "warning" | "information" | "hint"
           severity = {
-            undeclaredAccounts = "warning", 
+            undeclaredAccounts = "warning",
             undeclaredPayees = "warning",
             undeclaredCommodities = "warning",
             undeclaredTags = "information",
           },
-          
+
           -- Include directive behavior
           include = {
             followIncludes = true,
             maxDepth = 10,
           },
-          
+
           -- Workspace settings
           workspace = {
             enabled = true,
             eagerParsing = true,
             autoDetectRoot = true,
           },
-          
+
           -- Completion filtering (only show declared items)
           completion = {
             onlyDeclaredAccounts = true,
@@ -148,7 +155,7 @@ defaults. Copy and modify as needed:
             onlyDeclaredCommodities = true,
             onlyDeclaredTags = true,
           },
-          
+
           -- Formatting options
           formatting = {
             indentation = 4,
@@ -161,20 +168,20 @@ defaults. Copy and modify as needed:
             signPosition = "after-symbol",
             showPositivesSign = false,
           },
-          
-          -- Inlay hints (show Running Balances is turned off by default as 
+
+          -- Inlay hints (showRunningBalances is off by default as
           --              otherwise it can be very busy)
           inlayHints = {
             showInferredAmounts = true,
             showRunningBalances = false,
             showCostConversions = true,
           },
-          
+
           -- Code lens (default to false)
           codeLens = {
             showTransactionCounts = false,
           },
-          
+
           -- General settings
           maxNumberOfProblems = 1000,
           hledgerPath = "hledger",  -- Path to hledger executable
@@ -188,25 +195,54 @@ defaults. Copy and modify as needed:
 }
 ```
 
+</details>
+
 ## Commands and Keybindings
 
 ### Commands
 
-- `:HledgerGraph`: Opens a floating window showing the workspace graph.
+| Command | Description |
+|---------|-------------|
+| `:HledgerGraph` | Open the workspace graph in a floating window |
 
 ### Default Keybindings
 
-- `<leader>hg`: Opens the workspace graph (can be customized or disabled via
-  `keymap` option in setup)
+| Key | Description |
+|-----|-------------|
+| `<leader>hg` | Open workspace graph (customizable via `keymap` option) |
 
-### Workspace Graph Window Keybindings
+### Workspace Graph Window
 
-- `Enter`: Open selected file
-- `/`: Filter files
-- `za`: Toggle fold
-- `q` / `Esc`: Close window
+| Key | Action |
+|-----|--------|
+| `Enter` | Open selected file |
+| `/` | Filter files (fuzzy search) |
+| `za` | Toggle fold |
+| `q` / `Esc` | Close window |
 
 ## Requirements
 
 - Neovim >= 0.9.0
-- `hledger-lsp` installed (see Prerequisites)
+- [hledger-lsp](https://github.com/ptimoney/hledger-lsp) installed and in PATH
+- [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)
+
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [hledger-lsp](https://github.com/ptimoney/hledger-lsp) | Language server powering this plugin |
+| [hledger-vscode](https://github.com/ptimoney/hledger-vscode) | VS Code extension with the same language server |
+| [hledger](https://hledger.org/) | The plain text accounting tool |
+
+## Contributing
+
+Found a bug or have a feature request?
+
+- **Plugin issues** (Neovim UI, setup, keybindings): [hledger-nvim issues](https://github.com/ptimoney/hledger-nvim/issues)
+- **Server issues** (parsing, validation, formatting, completion): [hledger-lsp issues](https://github.com/ptimoney/hledger-lsp/issues)
+
+Contributions are welcome &mdash; please feel free to submit a Pull Request.
+
+## License
+
+MIT
