@@ -42,7 +42,7 @@ end
 --- Send updated settings to the LSP server.
 ---@param client vim.lsp.Client
 local function notify_settings_changed(client)
-  client.notify("workspace/didChangeConfiguration", {
+  client:notify("workspace/didChangeConfiguration", {
     settings = client.config.settings,
   })
 end

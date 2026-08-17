@@ -1,73 +1,36 @@
 local M = {}
-local lspconfig = require("lspconfig")
-local util = require("lspconfig.util")
-local configs = require("lspconfig.configs")
 
+--- Command set via setup()'s `cmd` option, read by lsp/hledger_lsp.lua.
+---@type string[]|nil
+M.cmd_override = nil
+
+--- Layer the user's overrides onto lsp/hledger_lsp.lua and enable the server.
+---@param opts table|nil
 function M.setup(opts)
   opts = opts or {}
-  
-  -- Default configuration
-  local default_cmd = { "hledger-lsp", "--stdio" }
-  if opts.cmd then
-    default_cmd = opts.cmd
+
+  if not vim.lsp.config then
+    vim.notify(
+      "hledger-nvim: LSP setup requires Neovim 0.11+ (vim.lsp.config)",
+      vim.log.levels.ERROR
+    )
+    return
   end
 
-  -- Define hledger_lsp as a custom server if not already defined
-  if not configs.hledger_lsp then
-    configs.hledger_lsp = {
-      default_config = {
-        cmd = default_cmd,
-        filetypes = { "hledger", "journal" },
-        root_dir = function(fname)
-          return util.root_pattern(".hledger-lsp.json", "main.journal", "all.journal", ".git")(fname)
-            or vim.fs.dirname(fname)
-        end,
-        single_file_support = true,
-        settings = {
-          hledgerLanguageServer = {
-            inlayHints = {
-              showInferredAmounts = true,
-              showRunningBalances = true,
-              showCostConversions = true,
-            },
-            codeLens = {
-              showRunningBalances = false,
-              showTransactionCounts = false,
-            },
-          },
-        },
-      },
-    }
-  end
-
-  -- Merge user options with default config
-  local setup_opts = vim.tbl_deep_extend("force", {
+  local config = vim.tbl_deep_extend("force", {
     on_attach = opts.on_attach,
     capabilities = opts.capabilities,
     settings = opts.settings,
   }, opts.lsp_opts or {})
 
-  lspconfig.hledger_lsp.setup(setup_opts)
+  -- Applied via cmd_override so it replaces the default instead of merging.
+  M.cmd_override = config.cmd or opts.cmd
+  config.cmd = nil
 
-  -- Attach to any already-open buffers (for first file open)
-  vim.schedule(function()
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_loaded(buf) then
-        local ft = vim.api.nvim_get_option_value("filetype", { buf = buf })
-        if ft == "hledger" or ft == "journal" then
-          local clients = vim.lsp.get_clients({ bufnr = buf, name = "hledger_lsp" })
-          if #clients == 0 then
-            lspconfig.hledger_lsp.manager:try_add_wrapper(buf)
-          end
-        end
-      end
-    end
-  end)
+  vim.lsp.config("hledger_lsp", config)
 
-  -- Note: Inlay hint refresh is now handled by the language server
-  -- The server sends workspace/inlayHint/refresh notifications when documents change,
-  -- which Neovim's LSP client automatically responds to.
-  -- No BufEnter workaround needed.
+  -- Attaches to matching buffers, including any that are already open.
+  vim.lsp.enable("hledger_lsp")
 end
 
 return M

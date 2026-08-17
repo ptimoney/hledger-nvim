@@ -10,7 +10,7 @@ Also available for [VS Code](https://marketplace.visualstudio.com/items?itemName
 
 All features are provided by the [hledger-lsp](https://github.com/ptimoney/hledger-lsp) language server. This plugin handles setup and provides Neovim-specific UI:
 
-- **LSP Integration** &mdash; automatic `hledger-lsp` configuration via `nvim-lspconfig`
+- **LSP Integration** &mdash; automatic `hledger-lsp` configuration via Neovim's built-in LSP client
 - **Completion** &mdash; accounts, payees, commodities, tags, and context-aware suggestions
 - **Validation** &mdash; 15+ configurable rules (balance, undeclared items, date ordering, etc.)
 - **Formatting** &mdash; decimal-point alignment, commodity formatting, configurable indentation
@@ -36,14 +36,42 @@ Verify it is in your PATH: `hledger-lsp --version`
 {
   "ptimoney/hledger-nvim",
   ft = { "hledger", "journal" },
-  dependencies = {
-    "neovim/nvim-lspconfig",
-  },
   config = function(_, opts)
     require("hledger").setup(opts)
   end,
 }
 ```
+
+### Filetype detection
+
+`*.journal` and `*.hledger` map to the `hledger` filetype (Neovim's own default
+for `*.journal` is `ledger`). Outside lazy.nvim, load the plugin eagerly or
+register the filetype yourself so it applies before your first journal opens:
+
+```lua
+vim.filetype.add({
+  extension = { journal = "hledger", hledger = "hledger" },
+})
+```
+
+To keep journals on the `ledger` filetype instead, point the server at it:
+
+```lua
+vim.lsp.config("hledger_lsp", { filetypes = { "hledger", "journal", "ledger" } })
+```
+
+### Without setup()
+
+The server config ships as `lsp/hledger_lsp.lua` on the runtimepath, so you can
+skip `setup()` and enable it yourself:
+
+```lua
+vim.lsp.enable("hledger_lsp")
+```
+
+Drop the `ft = { ... }` lazy-loading if you do &mdash; the plugin must be on the
+runtimepath when this runs. Overrides go in `after/lsp/hledger_lsp.lua`.
+`:HledgerGraph`, the toggle commands, and the keymap need `setup()`.
 
 ## Configuration
 
@@ -51,8 +79,8 @@ The `setup` function accepts a table with the following keys:
 
 - `cmd`: (table) The command to start the LSP server. Defaults to
 `{ "hledger-lsp", "--stdio" }`.
-- `lsp_opts`: (table) Options passed to `lspconfig.hledger_lsp.setup()`. Use
-this to set `on_attach`, `capabilities`, and `settings`.
+- `lsp_opts`: (table) Options merged into `vim.lsp.config("hledger_lsp", ...)`.
+Use this to set `on_attach`, `capabilities`, and `settings`.
 - `keymap`: (string|false) Keybinding for `:HledgerGraph`. Defaults to
 `"<leader>hg"`. Set to `false` to disable the default keybinding.
 
@@ -62,7 +90,6 @@ this to set `on_attach`, `capabilities`, and `settings`.
 {
   "ptimoney/hledger-nvim",
   ft = { "hledger", "journal" },
-  dependencies = { "neovim/nvim-lspconfig" },
   opts = {
     -- Keymap for :HledgerGraph (default: "<leader>hg")
     -- Set to false to disable, or customize to your preference
@@ -98,7 +125,6 @@ For a complete list of available settings (validation, formatting, completion, e
 {
   "ptimoney/hledger-nvim",
   ft = { "hledger", "journal" },
-  dependencies = { "neovim/nvim-lspconfig" },
   opts = {
     -- Keymap configuration
     keymap = "<leader>hg",  -- Default: opens workspace graph with <leader>hg
@@ -222,9 +248,8 @@ For a complete list of available settings (validation, formatting, completion, e
 
 ## Requirements
 
-- Neovim >= 0.9.0
+- Neovim >= 0.11 (for `vim.lsp.config()` / `vim.lsp.enable()`)
 - [hledger-lsp](https://github.com/ptimoney/hledger-lsp) installed and in PATH
-- [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)
 
 ## Related Projects
 
