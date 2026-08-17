@@ -124,6 +124,43 @@ describe("lsp.setup", function()
     assert.same({ "hledger-lsp", "--stdio" }, vim.lsp.config["hledger_lsp"].cmd)
   end)
 
+  it("adapts an lspconfig-style root_dir override", function()
+    lsp.setup({
+      lsp_opts = {
+        root_dir = function(fname)
+          return vim.fs.dirname(fname) .. "/legacy"
+        end,
+      },
+    })
+
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_name(buf, "/tmp/books/2026.journal")
+    local got
+    vim.lsp.config["hledger_lsp"].root_dir(buf, function(dir)
+      got = dir
+    end)
+    vim.api.nvim_buf_delete(buf, { force = true })
+
+    assert.equal("/tmp/books/legacy", got)
+  end)
+
+  it("leaves a native root_dir override alone", function()
+    lsp.setup({
+      lsp_opts = {
+        root_dir = function(_, on_dir)
+          on_dir("/tmp/native")
+        end,
+      },
+    })
+
+    local got
+    vim.lsp.config["hledger_lsp"].root_dir(0, function(dir)
+      got = dir
+    end)
+
+    assert.equal("/tmp/native", got)
+  end)
+
   it("merges lsp_opts.settings over the defaults", function()
     lsp.setup({
       lsp_opts = {
