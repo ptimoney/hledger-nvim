@@ -8,7 +8,15 @@ function M.show_workspace_graph()
     arguments = {},
   }
   
-  vim.lsp.buf_request(0, "workspace/executeCommand", params, function(err, result, ctx, config)
+  -- Target hledger_lsp only: buf_request broadcasts to every attached client,
+  -- and any other server rejects the command with "Unknown command".
+  local client = vim.lsp.get_clients({ bufnr = 0, name = "hledger_lsp" })[1]
+  if not client then
+    vim.notify("hledger_lsp is not attached to this buffer", vim.log.levels.WARN)
+    return
+  end
+
+  client:request("workspace/executeCommand", params, function(err, result, ctx, config)
     if err then
       vim.notify("Error getting workspace graph: " .. err.message, vim.log.levels.ERROR)
       return
