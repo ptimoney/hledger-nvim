@@ -16,6 +16,7 @@ All features are provided by the [hledger-lsp](https://github.com/ptimoney/hledg
 - **Formatting** &mdash; decimal-point alignment, commodity formatting, configurable indentation
 - **Navigation** &mdash; go to definition, find references, document/workspace symbols
 - **Inlay Hints** &mdash; inferred amounts, running balances, and cost conversions
+- **External Edits** &mdash; changes to included journals made outside Neovim (scripts, imports, `git pull`) refresh diagnostics without `:LspRestart` ([details](#external-file-changes))
 - **Workspace Graph** &mdash; `:HledgerGraph` floating window with fuzzy filtering and file preview
 
 ## Prerequisites
@@ -223,6 +224,39 @@ For a complete list of available settings (validation, formatting, completion, e
 
 </details>
 
+## External File Changes
+
+With hledger-lsp 0.8.0 or newer, editing an included journal outside Neovim
+(appending an `account` directive from a shell, an import script, `git pull`)
+updates diagnostics in your open buffers automatically &mdash; no `:LspRestart`.
+The server asks Neovim to watch the journal files via
+`workspace/didChangeWatchedFiles`, which works only if the client advertises
+dynamic registration for it:
+
+| Platform | Works out of the box? |
+|----------|------------------------|
+| macOS, Windows | Yes &mdash; Neovim enables it by default. |
+| Linux / BSD with `inotifywait` | Yes &mdash; Neovim leaves it off on these platforms, so this plugin turns it on for `hledger_lsp` only when `inotifywait` is on your PATH. |
+| Linux / BSD without `inotifywait` | No &mdash; install [inotify-tools](https://github.com/inotify-tools/inotify-tools) (e.g. `apt install inotify-tools`, `dnf install inotify-tools`, `pacman -S inotify-tools`) and restart Neovim. |
+
+Without it, external edits still show up the next time you open or edit the
+affected file, or after `:LspRestart`.
+
+To force it on without `inotifywait` (Neovim falls back to a slower
+directory-polling watcher), or to turn it off, set the capability yourself:
+
+```lua
+require("hledger").setup({
+  lsp_opts = {
+    capabilities = {
+      workspace = { didChangeWatchedFiles = { dynamicRegistration = true } }, -- or false
+    },
+  },
+})
+```
+
+`:checkhealth vim.lsp` shows the active file-watching backend.
+
 ## Commands and Keybindings
 
 ### Commands
@@ -249,7 +283,8 @@ For a complete list of available settings (validation, formatting, completion, e
 ## Requirements
 
 - Neovim >= 0.11 (for `vim.lsp.config()` / `vim.lsp.enable()`)
-- [hledger-lsp](https://github.com/ptimoney/hledger-lsp) installed and in PATH
+- [hledger-lsp](https://github.com/ptimoney/hledger-lsp) installed and in PATH (0.8.0+ for [external file changes](#external-file-changes))
+- Linux/BSD only, optional: `inotifywait` from inotify-tools, for [external file changes](#external-file-changes)
 
 ## Related Projects
 

@@ -197,3 +197,61 @@ describe("lsp.setup", function()
     assert.same({ "wins" }, vim.lsp.config["hledger_lsp"].cmd)
   end)
 end)
+
+describe("lsp file watching", function()
+  local real_uname, real_executable
+
+  --- Pretend to run on `sysname`, with inotifywait on PATH or not.
+  local function platform(sysname, has_inotifywait)
+    vim.uv.os_uname = function()
+      return { sysname = sysname }
+    end
+    vim.fn.executable = function(name)
+      if name == "inotifywait" then
+        return has_inotifywait and 1 or 0
+      end
+      return real_executable(name)
+    end
+  end
+
+  local function watched_files()
+    local caps = defaults().capabilities
+    return caps and caps.workspace and caps.workspace.didChangeWatchedFiles
+  end
+
+  before_each(function()
+    real_uname, real_executable = vim.uv.os_uname, vim.fn.executable
+  end)
+
+  after_each(function()
+    vim.uv.os_uname, vim.fn.executable = real_uname, real_executable
+    vim.lsp.config("hledger_lsp", {})
+  end)
+
+  it("turns on dynamic registration on Linux when inotifywait is installed", function()
+    platform("Linux", true)
+    assert.same({ dynamicRegistration = true }, watched_files())
+  end)
+
+  it("leaves Neovim's default alone on Linux without inotifywait", function()
+    platform("Linux", false)
+    assert.is_nil(watched_files())
+  end)
+
+  it("leaves Neovim's default alone on macOS and Windows", function()
+    platform("Darwin", true)
+    assert.is_nil(watched_files())
+    platform("Windows_NT", true)
+    assert.is_nil(watched_files())
+  end)
+
+  it("lets the user's capabilities switch it off", function()
+    platform("Linux", true)
+    lsp.setup({
+      capabilities = { workspace = { didChangeWatchedFiles = { dynamicRegistration = false } } },
+    })
+    local caps = vim.lsp.config["hledger_lsp"].capabilities
+    assert.equal(false, caps.workspace.didChangeWatchedFiles.dynamicRegistration)
+    vim.lsp.enable("hledger_lsp", false)
+  end)
+end)

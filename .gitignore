@@ -40,3 +40,6 @@ luac.out
 *.hex
 
 CLAUDE.md
+
+# Claude Code worktrees
+.claude/worktrees/
